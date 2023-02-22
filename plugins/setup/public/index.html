@@ -19,10 +19,10 @@
 						<ui-component class="m" name="input" path="?.language" config="required:1;dirsource:?.langs">@(Language)</ui-component>
 					</div>
 
-					<!-- <div class="grid-2 grid-xs-1"> -->
-						<!-- <ui-component class="m" name="input" path="?.translator" config="required:0;dirsource:deepl|@(DeepL),google|@(Google),libre|@(Libre),yandex|@(Yandex)">@(Translator)</ui-component> -->
-						<!-- <ui-component class="m" name="input" path="?.key" config="required:0;camouflage:1;placeholder:@(Google key its optional)">@(Key)</ui-component> -->
-					<!-- </div> -->
+					<div class="grid-2 grid-xs-1">
+						<ui-component class="m" name="input" path="?.translator" config="required:0;dirsource:?.translators">@(Translator)</ui-component>
+						<ui-component class="m" name="input" path="?.key" config="required:0;camouflage:1;placeholder:@(Google key its optional)">@(Key)</ui-component>
+					</div>
 
 					<div class="m">
 						<ui-component name="input" path="?.badhashes" config="required:0">@(Skip Hashes)</ui-component>

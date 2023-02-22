@@ -20,6 +20,9 @@ if(!config.badhashes)
 if(!config.translator)
 	config.translator = 'google';
 
+if(!config.translators)
+	config.translators = [{ id: 'deepl', name: 'DeepL' },{ id: 'google', name: 'Google' }, { id: 'libre', name: 'Libre' }, { id: 'yandex', name: 'Yandex' }];
+
 // Fixed settings
 CONF.allow_custom_titles = true;
 CONF.version = '1.0.0';
