@@ -46,7 +46,7 @@ __Instructions__:
 - Run the app `$ node index.js`
 - Register your local app in the OpenPlatform instance
 - Visit the app in the OpenPlatform and set tokens in the `Configuration` section
-- Copy module /totaltranslator.js (you can found in root path of this repository) in your modules folder into your app
+- [Copy module /totaltranslator.js](https://github.com/Totaljs-Spain/Modules/tree/main/Translator) in your modules folder into your app
 - Add your app url in app section in TotalTranslator
 - Copy url generated in Apps form to TotalTranslator module in your app
 - Now you can sync/import your own resource and start to translate your app __faster and easier__ than ever
