@@ -1,0 +1,37 @@
+<ui-component name="miniform" path="common.form" config="if:~PATH~;width:500;icon:rocket;title:@(Add application);submit:?/submit;reload:?/reload" class="hidden" plugin="~PATH~">
+	<div class="padding">
+		<span class="help"><i class="ti ti-warning mr5"></i>@(App need the Translator module added).</span>
+		<ui-component class="m" name="input" path="?.url" config="innerlabel:1;required:1;placeholder:@(Enter app url)">@(URL)</ui-component>
+	</div>
+
+	<nav>
+		<button name="submit">SUBMIT</button>
+		<button name="cancel">CANCEL</button>
+	</nav>
+</ui-component>
+
+<script>
+	PLUGIN(function(exports) {
+
+		exports.reload = function(com) {
+			var model = exports.model;
+		};
+
+		exports.submit = function(hide) {
+			var model = exports.form;
+			SETTER('loading/show');
+			AJAX('GET {0}/$otranslator/'.format(model.url), function(response, err) {
+				SETTER('loading/hide', 800);
+				if(response) {
+					response.url = model.url;
+					exports.tapi('app_insert ERROR @showloading', response, function() {
+						hide();
+						exports.caller && exports.caller.exec('refresh');
+					});
+				} else
+					EXEC('-notify/warning', err);
+			});
+		};
+
+	});
+</script>

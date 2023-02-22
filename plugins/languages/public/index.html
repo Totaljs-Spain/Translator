@@ -1,0 +1,65 @@
+<ui-plugin>
+
+	<header>
+		<label><i class="ti ti-language"></i>@(Languages)</label>
+		<div class="toolbar">
+			<button class="exec" data-exec="?/refresh"><i class="ti ti-sync"></i>@(Refresh)</button>
+		</div>
+	</header>
+
+	<ui-component name="datagrid" path="?.list" config="checkbox:0;checked:?.checked;exec:?/filter;margin:60;height:window;button:?/button;click:?/edit;noborder:1" class="invisible">
+		<script type="text/plain">
+			[
+				{ name: 'id', text: '@(ID)', width: 80, monospace: 1, align: 1 },
+				{ name: 'en', text: '@(English)', width: 250 },
+				{ name: '@{CONF.language}', text: '@(Name)', width: 250 },
+				{ name: 'active', text: '@(Active)', width: 120, type: 'boolean', options: '#boolean' },
+				{ name: 'ready', text: '@(Ready)', width: 120, type: 'boolean', options: '#boolean' },
+				{ type: 'controls', template: '<button name="activate"><i class="ti ti-{{ if active }}ban red{{ else }}language-alt{{ fi }}"></i><span>{{ if active }}@(Deactivate){{ else }}@(Activate){{ fi }}</span></button><button name="ready"><i class="ti ti-{{ if ready }}frown red{{ else }}thumbs-up{{ fi }}"></i><span>{{ if ready }}@(Not ready){{ else }}@(Its ready){{ fi }}</span></button>' }
+			]
+		</script>
+	</ui-component>
+
+</ui-plugin>
+<ui-component name="importer" path="common.form" config="if:languageform;url:/_languages/forms/languageform.html"></ui-component>
+
+<script>
+	PLUGIN(function(exports) {
+
+		exports.refresh = function() {
+			exports.nul('list');
+		};
+
+		exports.filter = function(type, filter, sort, page) {
+			if (!filter)
+				filter = {};
+
+			filter.sort = sort;
+			filter.page = page || 1;
+
+			exports.tapi(QUERIFY('languages ERROR @showloading', filter), 'list @hideloading');
+		};
+
+		exports.edit = function(row) {
+			SET('languageform @default', row);
+			SET('common.form', 'languageform');
+		};
+
+		exports.button = function(btnname, row) {
+			if(btnname === 'activate' && row) {
+				exports.tapi(QUERIFY('lang_activate ERR @showloading', row), function() {
+					SETTER('loading/hide', 800);
+					exports.refresh();
+				});
+			}
+
+			if(btnname === 'ready' && row) {
+				exports.tapi(QUERIFY('lang_ready ERR @showloading', { 'id': row.id, 'ready': row.ready }), function() {
+					SETTER('loading/hide', 800);
+					exports.refresh();
+				});
+			}
+		};
+	});
+
+</script>

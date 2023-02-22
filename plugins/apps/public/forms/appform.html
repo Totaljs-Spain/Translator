@@ -1,0 +1,65 @@
+<ui-component name="miniform" path="common.form" config="if:~PATH~;width:500;icon:rocket;title:Title;submit:?/submit;reload:?/reload" class="hidden" plugin="~PATH~">
+	<div class="padding">
+		<ui-bind path="?.id" config="hide:value == 1">
+			<span class="help"><i class="ti ti-warning mr5"></i>@(App need the Translator module added).</span>
+			<ui-component class="m" name="input" path="?.url" config="innerlabel:1;required:1;placeholder:@(Enter app url)">@(URL)</ui-component>
+		</ui-bind>
+
+		<ui-bind path="?.id" config="hide:!value">
+		<div>
+			<div class="grid-2 grid-xs-1">
+				<ui-component class="m" name="input" path="?.name" config="innerlabel:1;required:1">@(Name)</ui-component>
+				<ui-component class="m" name="input" path="?.icon" config="innerlabel:1;required:0;type:icon">@(Icon)</ui-component>
+			</div>
+		</div>
+		</ui-bind>
+		<ui-bind path="?.id" config="hide:(value == 1 || !value)">
+			<div class="help">@(Copy this url to Translator module config to integrate translations in your app)</div>
+			<div class="help" style="cursor:pointer"><ui-bind path="?.route" config="text"></ui-bind></div>
+		</ui-bind>
+	</div>
+
+	<nav>
+		<button name="submit">SUBMIT</button>
+		<button name="cancel">CANCEL</button>
+	</nav>
+</ui-component>
+
+<script>
+	PLUGIN(function(exports) {
+
+		exports.reload = function(com) {
+			var model = exports.model;
+			var id = model ? model.id : null;
+			com.reconfigure({ title: id ? '@(Update App)' : '@(Register App)' });
+			exports.set('?.route', location.origin + '/ot/?ot=' + model.id);
+		};
+
+		exports.submit = function(hide) {
+			var model = exports.form;
+
+			if(model.id) {
+				exports.tapi('app_update ERROR @showloading', model, function() {
+					SETTER('loading/hide', 800);
+					exports.caller && exports.caller.exec('refresh');
+					hide();
+				});
+				return;
+			} else {
+				SETTER('loading/show');
+				AJAX('GET {0}/$ictranslator/'.format(model.url), function(response, err) {
+					SETTER('loading/hide', 800);
+					if(response) {
+						response.url = model.url;
+						exports.tapi('app_update ERROR @showloading', response, function() {
+							hide();
+							exports.caller && exports.caller.exec('refresh');
+						});
+					} else
+						EXEC('-notify/warning', '@(Translator module not found).');
+				});
+			}
+		};
+
+	});
+</script>

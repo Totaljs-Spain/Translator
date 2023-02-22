@@ -1,0 +1,46 @@
+<ui-component name="miniform" path="common.form" config="if:~PATH~;width:500;icon:language;title:Title;submit:?/submit;reload:?/reload" class="hidden" plugin="~PATH~">
+	<div class="padding">
+
+		<ui-component class="m" name="input" path="?.id" config="innerlabel:1;disabled:true">@(ID)</ui-component>
+		<ui-component class="m" name="input" path="?.name" config="innerlabel:1;required:1;ricon:globe;riconclick:?/translate;placeholder:@(Enter language name)">@(Name)</ui-component>
+		<div class="grid-2 grid-xs-1">
+			<ui-component name="input" path="?.active" config="innerlabel:1;required:0;type:checkbox">@(Active)</ui-component>
+			<ui-component name="input" path="?.ready" config="innerlabel:1;required:0;type:checkbox">@(Ready)</ui-component>
+		</div>
+	</div>
+
+	<nav>
+		<button name="submit">SUBMIT</button>
+		<button name="cancel">CANCEL</button>
+	</nav>
+</ui-component>
+
+<script>
+	PLUGIN(function(exports) {
+
+		exports.reload = function(com) {
+			var model = exports.model;
+			var id = model ? model.id : null;
+			exports.set('?.name', model['@{CONF.language}']);
+			com.reconfigure({ title: id ? '@(Update language)' : '@(Register language)' });
+		};
+
+		exports.translate = async function(val) {
+			var model = exports.model;
+			var lang = '@{CONF.language}';
+
+	        var result = await translate(model.en, { 'to': lang });
+
+	        exports.set('?.name', result);
+		};
+
+		exports.submit = function(hide) {
+			var model = exports.form;
+			exports.tapi('lang_update @showloading', model, ERROR(function() {
+				hide();
+				exports.caller && exports.caller.exec('refresh');
+			}));
+		};
+
+	});
+</script>

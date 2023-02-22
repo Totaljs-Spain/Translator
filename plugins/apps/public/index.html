@@ -1,0 +1,51 @@
+<ui-plugin>
+
+	<header>
+		<label><i class="ti ti-rocket"></i>@(Apps)</label>
+		<div class="toolbar">
+			<button class="exec" data-exec="?/add"><i class="ti ti-plus-circle"></i>@(Add)</button>
+			<button class="exec" data-exec="?/refresh"><i class="ti ti-sync"></i>@(Refresh)</button>
+		</div>
+	</header>
+
+	<ui-component name="datagrid" path="?.list" config="checkbox:0;checked:?.checked;exec:?/filter;margin:60;height:window;click:?/add;noborder:1" class="invisible">
+		<script type="text/plain">
+			[
+				{ name: 'id', text: '@(ID)', width: 80, monospace: 1, align: 1, hide: true },
+				{ name: 'icon', text: '@(Icon)', type: 'template', template: '<i class="{{ icon }}"></i>', width: 90, align: 1 },
+				{ name: 'name', text: '@(Name)', width: 250 },
+				{ name: 'url', text: '@(URL)', width: 250 }
+			]
+		</script>
+	</ui-component>
+
+</ui-plugin>
+<ui-component name="importer" path="common.form" config="if:appform;url:/_apps/forms/appform.html"></ui-component>
+
+<script>
+	PLUGIN(function(exports) {
+		exports.reload = function() {
+			exports.refresh();
+		};
+
+		exports.refresh = function() {
+			exports.nul('list');
+		};
+
+		exports.filter = function(type, filter, sort, page) {
+			if (!filter)
+				filter = {};
+
+			filter.sort = sort;
+			filter.page = page || 1;
+
+			exports.tapi(QUERIFY('app_list ERROR @showloading', filter), 'list @hideloading');
+		};
+
+		exports.add = function(row) {
+			SET('appform @default', row ? row : {});
+			SET('common.form', 'appform');
+		};
+
+	});
+</script>

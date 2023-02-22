@@ -1,0 +1,237 @@
+<ui-component name="filereader"></ui-component>
+<ui-component name="LAZY approve"></ui-component>
+<ui-plugin>
+		<ui-component name="navlayout" path="common.menu" config="width:200" class="invisible">
+			<section>
+				<header>
+					<label><i class="ti ti-rocket"></i>@(Applications)</label>
+				</header>
+
+				<ui-component name="input" path="?.langsel" config="dirsource:?.langs"></ui-component>
+				<ui-component name="viewbox" path="common.page" config="parent:window;margin:127;scrollbarshadow:1">
+					<ui-component name="aselected">
+								<ui-bind path="?.apps" config="template">
+									<script type="text/html">
+										<div class="nav">
+											<nav>
+												{{ foreach m in value }}
+													<a href="/app/{{ m.id }}" class="jR"><i class="{{ m.icon }}"></i>{{ m.name }}</a>
+												{{end}}
+											</nav>
+										</div>
+									</script>
+								</ui-bind>
+					</ui-component>
+				</ui-component>
+				<footer>
+					<div>
+						<div class="exec foot" data-exec="?/publish" title="@(Publish)"><i class="ti ti-file-export"></i></div>
+						<div class="exec foot" data-exec="?/sync" title="@(Sync)"><i class="ti ti-sync"></i></div>
+						<div class="exec foot" data-exec="?/import" title="@(Import)"><i class="ti ti-upload"></i></div>
+						<div class="exec foot" data-exec="?/export" title="@(Export)"><i class="ti ti-download"></i></div>
+					</div>
+				</footer>
+			</section>
+			<main>
+				<header>
+					<label><i class="ti ti-language-alt"></i>@(Translations): <ui-bind path="?.appname" config="text"></ui-bind></label>
+					<div class="toolbar">
+						<button class="exec" data-exec="?/refresh"><i class="ti ti-refresh"></i>@(Refresh)</button>
+						<button class="exec hidden-xs" data-exec="?/merge"><i class="ti ti-receipt"></i>@(Merge)</button>
+						<button class="exec hidden-xs" data-exec="?/empties"><i id="showempty" class="ti ti-square"></i>@(Show pending)</button>
+					</div>
+				</header>
+
+				<!-- <ui-component name="empty" path="?.list" config="icon:ti ti-language-alt;parent:window;margin:50;wait:true" class="hidden">@(There are no translations to show.)</ui-component> -->
+				<ui-component name="datagrid" path="?.list" config="checkbox:0;checked:?.checked;exec:?/filter;margin:60;height:window;noborder:1;click:?/edit" class="invisible">
+					<script type="text/plain">
+						[
+							{ name: 'id', text: '@(ID)', width: 80, monospace: 1, hide: true },
+							{ name: 'hash', text: '@(Hash)', width: 80, monospace: 1, align: 1 },
+							{ name: 'deferr', text: '@(isDefault)', width: 80, type: 'boolean', options: '#boolean' },
+							{ name: 'text', text: '@(Text)', width: 250 },
+							{ name: 'name', text: '@(Translation)', width: 250 }
+						]
+					</script>
+				</ui-component>
+			</main>
+		</ui-component>
+	<div class="mobilemenu exec" data-exec="common/menu"><i class="ti ti-navicon"></i></div>
+</ui-plugin>
+<ui-component name="importer" path="common.form" config="if:translationsform;url:/_translations/forms/translationsform.html"></ui-component>
+<ui-component name="importer" path="common.form" config="if:appform;url:/_translations/forms/appform.html"></ui-component>
+<script>
+	PLUGIN('common', function(exports) {
+		exports.menu = function() {
+			exports.toggle('menu');
+		};
+	});
+
+	PLUGIN(function(exports) {
+
+		exports.reload = function(com) {
+			var model = exports.model;
+			exports.tapi('active_langs ERROR', '?.langs');
+			exports.tapi('app ERROR', '?.apps');
+
+			if(!model.langsel) {
+				exports.set('?.langsel', '@{CONF.language}');
+				exports.set('common.lang', '@{CONF.language}');
+			}
+		};
+
+		exports.refresh = function() {
+			exports.reload();
+			exports.nul('list');
+		};
+
+		exports.edit = function(row) {
+			var model = exports.model;
+			var lng = model.langs.findItem('id', model.langsel);
+			var app = model.apps.findItem('id', model.appsel || '1');
+			row.lng = lng.name;
+			row.langsel = model.langsel;
+			row.app = app.name;
+			row.appid = app.id;
+
+			SET('translationsform @default', row);
+			SET('common.form', 'translationsform');
+		};
+
+		exports.filter = function(type, filter, sort, page) {
+			var model = exports.model;
+
+			if(model.apps) {
+				var app = model.apps.findItem('id', model.appsel || '1');
+				exports.set('?.appname', app.name);
+			}
+
+			if (!filter)
+				filter = {};
+
+			filter.sort = sort || 'hash_asc';
+			filter.page = page || 1;
+
+			delete filter.showempty;
+            if(model.viewempty)
+           		filter.showempty = model.langsel;
+
+			filter.language = model.langsel;
+			filter.app = model.appsel || '1';
+			filter.limit = 999999;
+			exports.tapi(QUERIFY('translations', filter) + ' ERROR @showloading', 'list @hideloading');
+		};
+
+		exports.watch('?.langsel', function(value) {
+			exports.set('common.lang', value);
+			exports.refresh();
+		});
+
+		exports.publish = function() {
+			var model = exports.model;
+
+			if(model.appsel === '1')
+				return;
+
+			EXEC('-approve/show', '@(Publish will overwrite your resource files in the selected application. Do you want to continue?)', '@(Publish)', function() {
+				var app = model.apps.findItem('id', model.appsel);
+				if(!app) {
+					EXEC('-message/warning','@(App not found.)');
+					return;
+				}
+
+				var url = APP.tokenize(app.url + '$icresource/');
+				AJAX('POST ' + url, { 'language': model.langsel, 'resource': model.list.items }, function(response) {
+					EXEC('-message/info','@(Resource has been published.)');
+					exports.refresh();
+				});
+			});
+		};
+
+		exports.merge = function() {
+			var model = exports.model;
+			EXEC('-approve/show', '@(Merge will insert into the pending translations the translations made in other applications for this language "{0}". Do you want to continue?)'.format(model.langsel), '@(Merge)', function() {
+				exports.tapi('merge ERROR @showloading', model, function(response, err) {
+					EXEC('-message/info','@(Merge has been completed.)');
+					exports.refresh();
+				});
+			});
+		};
+
+		exports.import = function() {
+			var model = exports.model;
+
+			if(!model.appsel)
+				model.appsel = '1';
+
+			var lng = model.langs.findItem('id', model.langsel);
+			var app = model.apps.findItem('id', model.appsel);
+
+			var opt = {};
+			opt.accept = 'text/*.resource';
+			opt.callback = function(file) {
+				EXEC('-approve/show', '@(Are you sure you want to import selected resource to {0} app into {1} language?)'.format(app.name, lng.name), '@(Import)', function() {
+					exports.tapi(QUERIFY('import ERROR', { 'language': model.langsel, 'app': model.appsel, 'body': file.body }), function(response) {
+						EXEC('-message/info', response + ' @(items has been imported).@(Now you need to sync with your code)');
+						exports.refresh();
+					});
+				});
+			};
+			SETTER('filereader/open', opt);
+		};
+
+		exports.export = function() {
+			var model = exports.model;
+
+			if(!model.appsel)
+				model.appsel = '1';
+
+			var filename = model.appsel + '_' + model.langsel + '.resource';
+			var app = model.apps.findItem('id', model.appsel);
+
+			var value = model.list.items;
+			var builder = [];
+			builder.push('// ' + app.name + ' translation (' + model.langsel + ')');
+			builder.push('// Created:  ' + NOW.format('[ts]') + ' with Total.js TotalTranslator\n');
+			for (var i = 0; i < value.length; i++) {
+				var item = value[i];
+				var key = item.hash;
+				var val = item.name;
+				key && builder.push(key.padRight(25, ' ') + ': ' + (val == null ? '' : val));
+			}
+			var file = new Blob(['\uFEFF' + builder.join('\n')], { type: 'text/plain;charset=utf-8' });
+			saveAs(file, filename);
+		};
+
+		exports.sync = function() {
+			var model = exports.model;
+
+			if(!model.appsel)
+				model.appsel = '1';
+
+			exports.tapi(QUERIFY('localize ERROR @showloading', { 'app': model.appsel }), function(response) {
+				SETTER('loading/hide', 800);
+				exports.refresh();
+			});
+		};
+
+		exports.empties = function(path, value) {
+			var model = exports.model;
+
+			exports.set('?.viewempty', model.viewempty ? 0 : 1);
+			exports.nul('list');
+			$('#showempty').toggleClass(model.viewempty ? 'ti-check-square ti-square' : 'ti-square ti-check-square');
+		};
+
+		ON('location', function(val) {
+			model = exports.model;
+			if(val.substring(0,5) === '/app/'){
+				exports.set('?.appsel', val.substring(5).slice(0, -1));
+				var app = model.apps.findItem('id', val.substring(5).slice(0, -1));
+				exports.set('?.appname', app.name);
+				exports.refresh();
+			}
+		});
+	});
+		IMPORT('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js');
+</script>
